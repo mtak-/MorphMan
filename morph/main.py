@@ -252,9 +252,6 @@ def updateNotes( allDb ):
         # clear any 'special' tags, the appropriate will be set in the next few lines
         ts = [ t for t in ts if t not in [ notReadyTag, compTag, vocabTag, freshTag ] ]
 
-        if not i % 4000:
-            mw.progress.update(label=focusMorph.inflected + ' -- ' + focusMorph.norm)
-
         # determine card type
         if N_m == 0:    # sentence comprehension card, m+0
             ts = ts + [ compTag ]
