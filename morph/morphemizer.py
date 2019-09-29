@@ -2,6 +2,9 @@
 import pickle, gzip, os, subprocess, re, sys
 import importlib
 
+import hunspell as hunspell
+from .deps.hunspell import stemmer
+
 from .morphemes import Morpheme
 from .util_external import memoize
 
@@ -30,7 +33,7 @@ class Morphemizer:
 ####################################################################################################
 
 def getAllMorphemizers(): # -> [Morphemizer]
-    return [SpaceMorphemizer(), MecabMorphemizer(), JiebaMorphemizer(), CjkCharMorphemizer()]
+    return [SpaceMorphemizer(), BasqueMorphemizer(), MecabMorphemizer(), JiebaMorphemizer(), CjkCharMorphemizer()]
 
 def getMorphemizerByName(name):
     for m in getAllMorphemizers():
@@ -90,10 +93,10 @@ def getMorpheme(parts):
     if is_unidic:
         if len(parts) != MECAB_NODE_LENGTH_UNIDIC:
             return None
-        
+
         pos = parts[4] if parts[4] != '' else '*'
         subPos = parts[5] if parts[5] != '' else '*'
-        
+
         if (pos in MECAB_POS_BLACKLIST) or (subPos in MECAB_SUBPOS_BLACKLIST):
             return None
 
@@ -101,7 +104,7 @@ def getMorpheme(parts):
         base = parts[1]
         inflected = parts[2]
         reading = parts[3]
-        
+
         return Morpheme(norm, base, inflected, reading, pos, subPos)
     else:
         if len(parts) != MECAB_NODE_LENGTH_IPADIC:
@@ -227,7 +230,7 @@ def mecab(): # IO MecabProc
             return spawnMecab(['mecab'], si), 'System'
         except:
             raise OSError('No working dictionaries found.')
-        
+
     m = reading.MecabController()
     m.setup()
     # m.mecabCmd[1:4] are assumed to be the format arguments.
@@ -277,6 +280,30 @@ class SpaceMorphemizer(Morphemizer):
 
     def getDescription(self):
         return 'Language w/ Spaces'
+
+####################################################################################################
+# Basque/hunspell Morphemizer
+####################################################################################################
+class BasqueMorphemizer(Morphemizer):
+    """
+    Morphemizer for languages that use spaces (English, German, Spanish, ...). Because it is
+    a general-use-morphemizer, it can't generate the base form from inflection.
+    """
+    hspell = hunspell.HunSpell(
+        os.path.join(stemmer.HUNSPELL_DIR, 'eu_ES.dic'),
+        os.path.join(stemmer.HUNSPELL_DIR, 'eu_ES.aff'))
+
+    def getMorphemesFromExpr(self, e): # Str -> [Morpheme]
+        from .deps.hunspell.stemmer import stemmer
+        wordList = [word.lower() for word in re.findall(r"\w+", e, re.UNICODE)]
+        morphemes = []
+        for word in wordList:
+            stem = stemmer(self.hspell, word)
+            morphemes.append(Morpheme(stem, stem, word, stem, 'UNKNOWN', 'UNKNOWN'))
+        return morphemes
+
+    def getDescription(self):
+        return 'Basque Hunspell'
 
 ####################################################################################################
 # CJK Character Morphemizer
