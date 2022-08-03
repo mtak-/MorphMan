@@ -1,29 +1,36 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from aqt.utils import tooltip
 from anki.hooks import addHook
-from ..util import addBrowserNoteSelectionCmd, getFilter, jcfg, cfg1
-from .. import util
+from ..util import addBrowserNoteSelectionCmd, getFilter, runOnce
+from ..preferences import get_preference
 from anki.lang import _
 
-def pre( b ): # :: Browser -> State
-    noteTotal = len(b.selectedNotes())
-    return { 'tag':jcfg('Tag_AlreadyKnown'), 'noteTotal':noteTotal }
 
-def per( st, n ): # :: State -> Note -> State
-    notecfg = getFilter(n)
-    if notecfg is None: return st
+def pre(b):  # :: Browser -> State
+    noteTotal = len(b.selectedNotes())
+    return {'tag': get_preference('Tag_AlreadyKnown'), 'noteTotal': noteTotal}
+
+
+def per(st, n):  # :: State -> Note -> State
+    if getFilter(n) is None:
+        return st
+
     n.addTag(st['tag'])
     n.flush()
     return st
 
-def post( st ): # :: State -> State
-    tooltip( _( '{} notes given the {} tag'.format(st['noteTotal'], st['tag']) ) )
+
+def post(st):  # :: State -> State
+    tooltip(_('{} notes given the {} tag'.format(st['noteTotal'], st['tag'])))
     return st
 
+
+@runOnce
 def runAlreadyKnownTagger():
     label = 'MorphMan: Already Known Tagger'
     tooltipMsg = 'Tag all selected cards as already known'
-    shortcut = cfg1('set known and skip key')
-    addBrowserNoteSelectionCmd( label, pre, per, post, tooltip=tooltipMsg, shortcut=(shortcut,) )
+    shortcut = get_preference('set known and skip key')  # type: str
+    addBrowserNoteSelectionCmd(label, pre, per, post, tooltip=tooltipMsg, shortcut=(shortcut,))
 
-addHook( 'profileLoaded', runAlreadyKnownTagger )
+
+addHook('profileLoaded', runAlreadyKnownTagger)
