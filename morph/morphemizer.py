@@ -127,10 +127,10 @@ class BasqueMorphemizer(Morphemizer):
         os.path.join(stemmer.HUNSPELL_DIR, 'eu_ES.aff'))
 
     def getMorphemesFromExpr(self, e): # Str -> [Morpheme]
-        wordList = [word.lower() for word in re.findall(r"\w+", e, re.UNICODE)]
+        wordList = [word for word in re.findall(r"\w+", e, re.UNICODE)]
         morphemes = []
         for word in wordList:
-            stem = stemmer.stemmer(self.hspell, word)
+            (word, stem) = stemmer.stemmer(self.hspell, word)
             morphemes.append(Morpheme(stem, stem, word, stem, 'UNKNOWN', 'UNKNOWN'))
         return morphemes
 
@@ -150,10 +150,10 @@ class RussianMorphemizer(Morphemizer):
         os.path.join(stemmer.HUNSPELL_DIR, 'ru_RU.aff'))
 
     def getMorphemesFromExpr(self, e): # Str -> [Morpheme]
-        wordList = [word.lower() for word in re.findall(r"\w+", e, re.UNICODE)]
+        wordList = [word for word in re.findall(r"\w+", e, re.UNICODE)]
         morphemes = []
         for word in wordList:
-            stem = stemmer.stemmer(self.hspell, word)
+            (word, stem) = stemmer.stemmer(self.hspell, word)
             morphemes.append(Morpheme(stem, stem, word, stem, 'UNKNOWN', 'UNKNOWN'))
         return morphemes
 

@@ -10,8 +10,18 @@ def stemmer(hspell, word):
 	:param word: word whose stem you want to try to detect.
 	:return: word stem.
 	"""
-	analysis = hspell.stem(word)
+	# check lower case first
+	word_l = word.lower()
+	analysis = hspell.stem(word_l)
 	if len(analysis):
-		return analysis[0].decode("utf-8")
-	else:
-		return word
+		return (word_l, analysis[0].decode("utf-8"))
+	
+	# proper names Дагестан for example
+	word_c = word.capitalize()
+	analysis = hspell.stem(word_c)
+	if len(analysis):
+		return (word_c, analysis[0].decode("utf-8"))
+	
+	# not found! conservatively assume it's a new word, but liberally assume
+	# it's not a proper noun.
+	return (word_l, word_l)
