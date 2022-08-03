@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import re
+import os
 from functools import lru_cache
 
-import hunspell as hunspell
+from .deps.hunspell import hunspell
 from .deps.hunspell import stemmer
 
 from .morphemes import Morpheme
@@ -55,7 +56,7 @@ def getAllMorphemizers():
     # type: () -> [Morphemizer]
     global morphemizers
     if morphemizers is None:
-        morphemizers = [SpaceMorphemizer(), BasqueMorphemizer(), MecabMorphemizer(), JiebaMorphemizer(), CjkCharMorphemizer()]
+        morphemizers = [SpaceMorphemizer(), RussianMorphemizer(), BasqueMorphemizer(), MecabMorphemizer(), JiebaMorphemizer(), CjkCharMorphemizer()]
 
         for m in morphemizers:
             morphemizers_by_name[m.getName()] = m
@@ -126,16 +127,38 @@ class BasqueMorphemizer(Morphemizer):
         os.path.join(stemmer.HUNSPELL_DIR, 'eu_ES.aff'))
 
     def getMorphemesFromExpr(self, e): # Str -> [Morpheme]
-        from .deps.hunspell.stemmer import stemmer
         wordList = [word.lower() for word in re.findall(r"\w+", e, re.UNICODE)]
         morphemes = []
         for word in wordList:
-            stem = stemmer(self.hspell, word)
+            stem = stemmer.stemmer(self.hspell, word)
             morphemes.append(Morpheme(stem, stem, word, stem, 'UNKNOWN', 'UNKNOWN'))
         return morphemes
 
     def getDescription(self):
         return 'Basque Hunspell'
+
+
+####################################################################################################
+# Russian/hunspell Morphemizer
+####################################################################################################
+class RussianMorphemizer(Morphemizer):
+    """
+    Morphemizer for Russian using hunspell and freedesktop/libreoffice dictionaries.
+    """
+    hspell = hunspell.HunSpell(
+        os.path.join(stemmer.HUNSPELL_DIR, 'ru_RU.dic'),
+        os.path.join(stemmer.HUNSPELL_DIR, 'ru_RU.aff'))
+
+    def getMorphemesFromExpr(self, e): # Str -> [Morpheme]
+        wordList = [word.lower() for word in re.findall(r"\w+", e, re.UNICODE)]
+        morphemes = []
+        for word in wordList:
+            stem = stemmer.stemmer(self.hspell, word)
+            morphemes.append(Morpheme(stem, stem, word, stem, 'UNKNOWN', 'UNKNOWN'))
+        return morphemes
+
+    def getDescription(self):
+        return 'Russian Hunspell'
 
 
 ####################################################################################################
