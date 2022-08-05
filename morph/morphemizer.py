@@ -2,6 +2,7 @@
 import re
 import os
 from functools import lru_cache
+import unicodedata
 
 from .deps.hunspell import hunspell
 from .deps.hunspell import stemmer
@@ -148,17 +149,26 @@ class RussianMorphemizer(Morphemizer):
     hspell = hunspell.HunSpell(
         os.path.join(stemmer.HUNSPELL_DIR, 'ru_RU.dic'),
         os.path.join(stemmer.HUNSPELL_DIR, 'ru_RU.aff'))
+    word_re = re.compile(r"[а-яА-ЯёË]+", re.UNICODE)
 
     def getMorphemesFromExpr(self, e): # Str -> [Morpheme]
-        wordList = [word for word in re.findall(r"\w+", e, re.UNICODE)]
+        e = strip_accents(e)
+        wordList = [word for word in self.word_re.findall(e) if not word.isdigit()]
         morphemes = []
         for word in wordList:
             (word, stem) = stemmer.stemmer(self.hspell, word)
-            morphemes.append(Morpheme(stem, stem, word, stem, 'UNKNOWN', 'UNKNOWN'))
+            
+            pos = 'PROPN' if stem[0].isupper() else 'UNKNOWN'
+            
+            morphemes.append(Morpheme(stem, stem, word, stem, pos, pos))
         return morphemes
 
     def getDescription(self):
         return 'Russian Hunspell'
+
+def strip_accents(s):
+    return ''.join(c for c in unicodedata.normalize('NFC', s)
+        if unicodedata.category(c) != 'Mn')
 
 
 ####################################################################################################
